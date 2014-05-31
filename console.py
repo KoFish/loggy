@@ -25,7 +25,8 @@ class Console(object):
 
     def __del__(self):
         self.stdout.write_raw(term.screen.restore_dec('auto_wrap'))
-        self.stdout.write_raw('Reset terminal\n')
+        sys.stdout = self.stdout._out
+        sys.stderr = self.stderr._out
 
     def get_size(self):
         size = shutil.get_terminal_size()
