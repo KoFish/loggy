@@ -48,7 +48,7 @@ class Console(object):
             if each._done:
                 self._items.remove(each)
             else:
-                each.draw(console_size, current_row)
+                each._update(console_size, current_row)
 
     def _log_str(self, *a, **kw):
         sep = kw.get('sep', ' ')
@@ -64,77 +64,133 @@ class Console(object):
         rows, columns = self.get_size()
         s = self._log_str(*a, **dict(kw, width=columns-10))
         row = self.get_row_count()
-        last_row, last_row_nr, last_row_count = self._last_log
+        last_row, last_row_nr, counter = self._last_log
         if s == last_row and last_row_nr == row:
-            count = last_row_count + 1
-            indsize = math.floor(math.log10(count)) + 1
-            string = "{0:>{1}}".format(count, indsize)
-            operations = [term.cursor.up(1),
-                          term.cursor.place_col(columns - indsize + 1),
-                          term.attribute.bold,
-                          term.attribute.color(term.color.WHITE, term.color.RED),
-                          '{}',
-                          term.attribute.reset]
-            self.stdout.write_raw(term.reset_position(''.join(map(str, operations))).format(string[:6]))
-            self.stdout.flush()
-            self._last_log = (s, row, count)
+            counter.inc()
+            self._last_log = (s, row, counter)
         else:
             self.stdout.write(s)
-            self._last_log = (s, row + 1, 1)
+            c = Counter(offset=1, min_value=2, owner=self)
+            c.inc()
+            self._items.append(c)
+            self._last_log = (s, row + 1, c)
 
-    def add_progress_bar(self, min=0, max=100):
-        p = ProgressBar(self, min, max)
+    def add_progress_bar(self, min=0, max=100, **kw):
+        p = ProgressBar(min, max, owner=self, **kw)
         self._items.append(p)
         return p
 
+    def add_checkbox(self, text, **kw):
+        cb = Checkbox(text, owner=self, **kw)
+        self._items.append(cb)
+        return cb
 
-class TermItem(object):
-    def __init__(self, owner):
+
+class RelTermItem(object):
+    def __init__(self, offset=0, owner=None):
         self._owner = owner
         self._done = False
+        self._start_row = self._owner.get_row_count() - offset
+
+    def _update(self, console_size=None, current_row=None):
+        if self._done:
+            return
+        rows, cols = console_size or self._owner.get_size()
+        current_row = current_row or self._owner.get_row_count()
+        diff = current_row - self._start_row
+        if diff >= rows:
+            self._done = True
+            return
+        operations = []
+        if diff > 0:
+            operations.append(term.cursor.up(diff))
+        item_string = self.draw((rows, cols), current_row)
+        if item_string is not None:
+            operations.append(item_string)
+            self._owner.stdout.write_raw(term.reset_position(''.join(operations)))
+        self._owner.stdout.flush()
 
     @property
     def done(self):
         return self._done
 
 
-class ProgressBar(TermItem):
-    def __init__(self, owner, min, max):
-        super(ProgressBar, self).__init__(owner)
-        self.min = min
-        self.max = max
-        self.current = min
-        self._start_row = self._owner.get_row_count()
+class Counter(RelTermItem):
+    def __init__(self, offset, min_value, owner):
+        super(Counter, self).__init__(offset=offset, owner=owner)
+        self.value = 0
+        self._min_value = min_value
+
+    def inc(self, count=1):
+        self.value += count
+        self._update()
+
+    def draw(self, console_size, current_row):
+        if self.value < self._min_value:
+            return None
+        rows, cols = console_size
+        indsize = math.floor(math.log10(self.value)) + 1
+        operations = [
+            term.cursor.place_col(cols - indsize + 1),
+            # term.cursor.place_col(0),
+            term.attribute.bold,
+            term.attribute.color(term.color.WHITE, term.color.RED),
+            str(self.value),
+            term.attribute.reset
+        ]
+        return ''.join(operations)
+
+
+class ProgressBar(RelTermItem):
+    def __init__(self, min_value, max_value, owner, width=0):
+        super(ProgressBar, self).__init__(owner=owner)
+        self.min = min_value
+        self.max = max_value
+        self.max_width = max(width, 0)
+        self.current = min_value
         self._owner.stdout.write('\n')
-        self.draw(current_row=self._start_row + 1)
+        self._update(current_row=self._start_row + 1)
 
     def _get_percent(self):
         rcur = self.current - self.min
         rmax = self.max - self.min
         return rcur/rmax
 
-    def draw(self, console_size=None, current_row=None):
+    def draw(self, console_size, current_row):
         rows, columns = console_size or self._owner.get_size()
-        crow = current_row or self._owner.get_row_count()
-        if self._start_row is None:
-            self._start_row = crow
-
-        operations = []
-        if crow > self._start_row:
-            diff = crow - self._start_row
-            if diff >= rows:
-                self._done = True
-                return
-            operations += [term.cursor.up(diff), term.cursor.place_col(1)]
-        operations += [term.clear.line]
+        operations = [
+            term.cursor.place_col(1),
+            term.clear.line
+        ]
+        width = min(self.max_width, columns)
         percent = min(self._get_percent(), 1.0)
-        finished = int((columns - 2) * percent)
-        operations += ['[' + '=' * finished + '-' * ((columns - 2) - finished) + ']']
-        self._owner.stdout.write_raw(term.reset_position(''.join(map(str, operations))))
+        finished = int((width - 2) * percent)
+        operations += ['[' + '=' * finished + '-' * ((width - 2) - finished) + ']']
+        return ''.join(map(str, operations))
 
     def update(self, steps=1):
         self.current += 1
-        self.draw()
+        self._update()
 
+
+class Checkbox(RelTermItem):
+    UNCHECKED = 0
+    TRISTATE = 1
+    CHECKED = 2
+
+    def __init__(self, text, owner):
+        super(Checkbox, self).__init__(owner=owner)
+        self.state = Checkbox.UNCHECKED
+        self.text = text
+        self._owner.stdout.write('\n')
+        self._update(current_row=self._start_row + 1)
+
+    def draw(self, console_size, current_row):
+        return ('[{}] '+self.text).format({0: ' ', 1: '-', 2: 'X'}.get(self.state, 'E'))
+
+    def check(self, tristate):
+        self.state = Checkbox.CHECKED if not tristate else Checkbox.TRISTATE
+        self._update()
+        self._done = True
 
 console = Console()
