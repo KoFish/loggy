@@ -18,6 +18,7 @@ class Console(object):
         self.stderr = sys.stderr
 
         self._last_log = (None, -1, 0)
+        self._items = []
         self.stdout.write_raw(term.screen.store_dec('auto_wrap'))
         self.stdout.write_raw(term.screen.reset_dec('auto_wrap'))
 
@@ -31,6 +32,15 @@ class Console(object):
 
     def get_current_position(self, **kw):
         return term.get_cursor_position(**kw)
+
+    def update(self):
+        console_size = self.get_size()
+        current_row = self.get_row_count()
+        for each in self._items:
+            if each._done:
+                self._items.remove(each)
+            else:
+                each.draw(console_size, current_row)
 
     def _log_str(self, *a, **kw):
         sep = kw.get('sep', ' ')
@@ -66,12 +76,23 @@ class Console(object):
 
     def add_progress_bar(self, min=0, max=100):
         p = ProgressBar(self, min, max)
+        self._items.append(p)
         return p
 
 
-class ProgressBar(object):
-    def __init__(self, owner, min, max):
+class TermItem(object):
+    def __init__(self, owner):
         self._owner = owner
+        self._done = False
+
+    @property
+    def done(self):
+        return self._done
+
+
+class ProgressBar(TermItem):
+    def __init__(self, owner, min, max):
+        super(ProgressBar, self).__init__(owner)
         self.min = min
         self.max = max
         self.current = min
@@ -92,7 +113,11 @@ class ProgressBar(object):
 
         operations = []
         if crow > self._start_row:
-            operations += [term.cursor.up(crow - self._start_row), term.cursor.place_col(1)]
+            diff = crow - self._start_row
+            if diff >= rows:
+                self._done = True
+                return
+            operations += [term.cursor.up(diff), term.cursor.place_col(1)]
         operations += [term.clear.line]
         percent = min(self._get_percent(), 1.0)
         finished = int((columns - 2) * percent)

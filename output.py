@@ -42,6 +42,7 @@ class Output(io.BufferedWriter):
         self._out.write('\n'.join("{0[1]}".format(each) for each in erows))
         if endnl:
             self._out.write('\n')
+            self._console.update()
         else:
             self._out.flush()
         Output._prev_nl = endnl
