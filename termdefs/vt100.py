@@ -3,6 +3,8 @@ CSI = ESC + '['
 
 LMN_set       = CSI + '20h'  # Set new line mode
 LMN_reset     = CSI + '20l'  # Set line feed mode
+DEC_set       = (CSI + '?{}h', ('decvar',))
+DEC_reset     = (CSI + '?{}l', ('decvar',))
 DECCKM_set    = CSI + '?1h'  # Set cursor key to application
 DECCKM_reset  = CSI + '?1l'  # Set cursor key to cursor
 DECANM_set    = ''           # Set ANSI (versus VT52)

@@ -18,8 +18,11 @@ class Console(object):
         self.stderr = sys.stderr
 
         self._last_log = (None, -1, 0)
+        self.stdout.write_raw(term.screen.store_dec('auto_wrap'))
+        self.stdout.write_raw(term.screen.reset_dec('auto_wrap'))
 
     def __del__(self):
+        self.stdout.write_raw(term.screen.restore_dec('auto_wrap'))
         self.stdout.write_raw('Reset terminal\n')
 
     def get_size(self):

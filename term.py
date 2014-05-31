@@ -13,6 +13,23 @@ remove_escapes = lambda s: ''.join(filter(lambda ss: not ss.startswith('\033'), 
 
 
 class screen():
+    DEC = {
+        'cursor_key': 1,
+        'ansi': 2,
+        '132col': 3,
+        'smooth_scroll': 4,
+        'reverse_video': 5,
+        'relative_origin': 6,
+        'auto_wrap': 7,
+        'auto_repeat': 8,
+        'interlacing': 9,
+        'full_screen_print': 19,  # Kind of missleading, reset limits to scrolling area
+        'show_cursor': 25,
+        'show_scrollbar': 30,
+        'left_right_margin': 69,
+        'alt_buffer': 1047,
+        'alt_buffer_store': 1049
+    }
     new_line_mode = vt.LMN_set
     line_feed_mode = vt.LMN_reset
     cursor_app_mode = vt.DECCKM_set
@@ -32,6 +49,34 @@ class screen():
     scroll_down = vt.RI
 
     reset = vt.RIS
+
+    @staticmethod
+    def set_dec(name):
+        if name in screen.DEC:
+            return vt.DEC_set[0].format(screen.DEC[name])
+        else:
+            raise IndexError("No such DEC private mode variable")
+
+    @staticmethod
+    def reset_dec(name):
+        if name in screen.DEC:
+            return vt.DEC_reset[0].format(screen.DEC[name])
+        else:
+            raise IndexError("No such DEC private mode variable")
+
+    @staticmethod
+    def store_dec(name):
+        if name in screen.DEC:
+            return xterm.SAVEDEC[0].format(screen.DEC[name])
+        else:
+            raise IndexError("No such DEC private mode variable")
+
+    @staticmethod
+    def restore_dec(name):
+        if name in screen.DEC:
+            return xterm.RESETDEC[0].format(screen.DEC[name])
+        else:
+            raise IndexError("No such DEC private mode variable")
 
 
 class color():
