@@ -69,7 +69,7 @@ class Console(object):
             indsize = math.floor(math.log10(count)) + 1
             string = "{0:>{1}}".format(count, indsize)
             operations = [term.cursor.up(1),
-                          term.cursor.place_col(columns - indsize),
+                          term.cursor.place_col(columns - indsize + 1),
                           term.attribute.bold,
                           term.attribute.color(term.color.WHITE, term.color.RED),
                           '{}',
