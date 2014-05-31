@@ -3,7 +3,6 @@ import io
 
 class Output(io.BufferedWriter):
     _prev_nl = True
-    _line_count = 0
 
     def __init__(self, console, old):
         self._out = old
@@ -37,8 +36,8 @@ class Output(io.BufferedWriter):
         if not Output._prev_nl:
             self._out.write(rows[0])
             rows = rows[1:]
-        erows = enumerate(rows, Output._line_count)
-        Output._line_count += len(rows)
+        erows = enumerate(rows, self._console.get_row_count())
+        self._console.add_row_count(len(rows))
         self._out.write('\n'.join("{0[1]}".format(each) for each in erows))
         if endnl:
             self._out.write('\n')
@@ -46,9 +45,6 @@ class Output(io.BufferedWriter):
         else:
             self._out.flush()
         Output._prev_nl = endnl
-
-    def get_current_row(self):
-        return self._line_count
 
     def flush(self):
         self._out.flush()

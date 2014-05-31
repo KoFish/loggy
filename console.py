@@ -10,6 +10,7 @@ from utils import word_wrap
 
 class Console(object):
     def __init__(self):
+        self._line_count = 0
         if not isinstance(sys.stdout, Output):
             sys.stdout = Output(self, sys.stdout)
         if not isinstance(sys.stderr, Output):
@@ -33,6 +34,12 @@ class Console(object):
     def get_current_position(self, **kw):
         return term.get_cursor_position(**kw)
 
+    def add_row_count(self, count):
+        self._line_count += count
+
+    def get_row_count(self):
+        return self._line_count
+
     def update(self):
         console_size = self.get_size()
         current_row = self.get_row_count()
@@ -55,7 +62,7 @@ class Console(object):
         sleep(0.5)
         rows, columns = self.get_size()
         s = self._log_str(*a, **dict(kw, width=columns-10))
-        row = self.stdout.get_current_row()
+        row = self.get_row_count()
         last_row, last_row_nr, last_row_count = self._last_log
         if s == last_row and last_row_nr == row:
             count = last_row_count + 1
@@ -96,7 +103,7 @@ class ProgressBar(TermItem):
         self.min = min
         self.max = max
         self.current = min
-        self._start_row = self._owner.stdout.get_current_row()
+        self._start_row = self._owner.get_row_count()
         self._owner.stdout.write('\n')
         self.draw(current_row=self._start_row + 1)
 
@@ -107,7 +114,7 @@ class ProgressBar(TermItem):
 
     def draw(self, console_size=None, current_row=None):
         rows, columns = console_size or self._owner.get_size()
-        crow = current_row or self._owner.stdout.get_current_row()
+        crow = current_row or self._owner.get_row_count()
         if self._start_row is None:
             self._start_row = crow
 
