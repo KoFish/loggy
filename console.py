@@ -129,13 +129,13 @@ class Counter(RelTermItem):
         if self.value < self._min_value:
             return None
         rows, cols = console_size
-        indsize = math.floor(math.log10(self.value)) + 1
+        string = '|{0}|'.format(str(self.value))
         operations = [
-            term.cursor.place_col(cols - indsize + 1),
-            # term.cursor.place_col(0),
+            term.cursor.place_col(cols - len(string) + 1),
+            # term.cursor.place_col(70 - len(string)),
             term.attribute.bold,
             term.attribute.color(term.color.WHITE, term.color.RED),
-            str(self.value),
+            string,
             term.attribute.reset
         ]
         return ''.join(operations)
@@ -168,7 +168,7 @@ class ProgressBar(RelTermItem):
         operations += ['[' + '=' * finished + '-' * ((width - 2) - finished) + ']']
         return ''.join(map(str, operations))
 
-    def update(self, steps=1):
+    def inc(self, steps=1):
         self.current += 1
         self._update()
 
@@ -188,9 +188,10 @@ class Checkbox(RelTermItem):
     def draw(self, console_size, current_row):
         return ('[{}] '+self.text).format({0: ' ', 1: '-', 2: 'X'}.get(self.state, 'E'))
 
-    def check(self, tristate):
+    def check(self, tristate=False):
         self.state = Checkbox.CHECKED if not tristate else Checkbox.TRISTATE
         self._update()
-        self._done = True
+        if not tristate:
+            self._done = True
 
 console = Console()

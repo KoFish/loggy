@@ -1,0 +1,85 @@
+from time import sleep
+from console import console
+
+print(" Using Loggy! ")
+print("==============\n")
+
+console.log("Things to cover:")
+pg_cb = console.add_checkbox("Progress bars")
+cb_cb = console.add_checkbox("Checkboxes")
+lg_cb = console.add_checkbox("Logging")
+
+sleep(0.7)
+
+print()
+console.log("Presentation progress:")
+main_progress = console.add_progress_bar(0, 4, width=20)
+pg_cb.check(True)
+print()
+console.log("First of all, you can make progress bars!")
+ex_prog = console.add_progress_bar(0, 10, width=12)
+for i in range(10):
+    ex_prog.inc()
+    sleep(0.3)
+main_progress.inc()
+pg_cb.check()
+
+sleep(0.7)
+
+cb_cb.check(True)
+print()
+console.log("You can also create checkboxes!")
+console.log("Checkboxes can be checked whenever")
+cb1 = console.add_checkbox("First")
+cb2 = console.add_checkbox("Second")
+cb3 = console.add_checkbox("Third")
+sleep(0.7)
+cb2.check()
+sleep(0.7)
+cb1.check()
+sleep(0.7)
+cb3.check()
+main_progress.inc()
+cb_cb.check()
+
+sleep(0.7)
+
+lg_cb.check(True)
+print()
+console.log("When logging things repeating lines can be distracting. "
+            "Similarly to how, for example, the chrome inspector does "
+            "it, Loggy keeps a counter for repeating strings, as long "
+            "as they follow each other, like this:")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+sleep(0.3)
+console.log("This string will be repeated thirteen times!")
+
+console.log("All this is done with the `console.log` command.")
+main_progress.inc()
+lg_cb.check()
+
+console.log("Now we are done!")
+main_progress.inc()
